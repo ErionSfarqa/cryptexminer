@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+  <path d="M20 2L38 20L20 38L2 20L20 2Z" fill="url(#g)"/>
+  <path d="M20 5L35 20L20 35L5 20L20 5Z" stroke="#fff" stroke-width="0.8" stroke-opacity="0.3" fill="none"/>
+  <text x="20" y="20" text-anchor="middle" dominant-baseline="central" fill="#fff" font-family="system-ui,-apple-system,sans-serif" font-weight="700" font-size="16" letter-spacing="-0.5">C</text>
+  <defs>
+    <linearGradient id="g" x1="2" y1="2" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1b6ef5"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+</svg>

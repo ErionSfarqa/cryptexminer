@@ -1,0 +1,33 @@
+{
+  "name": "cryptex-miner",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "clean": "npx rimraf .next node_modules/.cache",
+    "rebuild": "npx rimraf .next node_modules/.cache && next build"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
+    "@walletconnect/ethereum-provider": "^2.23.7",
+    "@walletconnect/modal": "^2.7.0",
+    "next": "^14.2.21",
+    "porto": "^0.2.37",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "viem": "^2.46.3",
+    "wagmi": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.4.5"
+  }
+}
