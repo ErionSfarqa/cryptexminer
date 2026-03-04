@@ -1,7 +1,7 @@
 /**
  * Shared cookie configuration for the purchase gate.
  *
- * Cookie value is an HMAC-signed token: "txnId:timestamp:hmacHex"
+ * Cookie value is an HMAC-signed token: "token:timestamp:hmacHex"
  * so it cannot be forged by setting it in DevTools.
  *
  * Sign/verify functions live in @/lib/auth.ts (Web Crypto API —
@@ -13,7 +13,7 @@ export const PURCHASE_COOKIE = "cryptex_purchased";
 export const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  sameSite: "strict" as const,
   path: "/",
-  maxAge: 60 * 60 * 24 * 365, // 1 year
+  maxAge: 60 * 60 * 24 * 30, // 30 days
 };

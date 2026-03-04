@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { PayPalHostedButton } from "@/components/PayPalHostedButton";
@@ -8,28 +8,22 @@ import { usePaywall } from "@/lib/usePaywall";
 
 export function BuySection() {
   const { isPaid, isLoading, confirmPayment } = usePaywall();
-  const [txnId, setTxnId] = useState("");
-  const [verifying, setVerifying] = useState(false);
+  const [activating, setActivating] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleVerify = async () => {
+  /** Called automatically by the PayPal SDK after successful payment */
+  const handlePaymentApproved = useCallback(async () => {
     setError("");
-    if (!txnId.trim()) {
-      setError("Please enter your PayPal transaction ID.");
-      return;
-    }
-
-    setVerifying(true);
-    const result = await confirmPayment(txnId.trim());
-    setVerifying(false);
-
+    setActivating(true);
+    const result = await confirmPayment();
     if (result.ok) {
       router.push("/app/mine");
     } else {
-      setError(result.error || "Verification failed. Please check your transaction ID.");
+      setActivating(false);
+      setError(result.error || "Could not activate access. Please refresh and try again.");
     }
-  };
+  }, [confirmPayment, router]);
 
   return (
     <section className="section-padding bg-white" id="buy">
@@ -149,8 +143,16 @@ export function BuySection() {
                 </div>
               )}
 
-              {/* Not paid — show PayPal button + verification form */}
-              {!isPaid && !isLoading && (
+              {/* Activating state — between PayPal approval and redirect */}
+              {activating && !isLoading && (
+                <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <div className="w-8 h-8 border-2 border-gray-300 border-t-brand-500 rounded-full animate-spin" />
+                  <p className="text-sm text-gray-600">Activating your license…</p>
+                </div>
+              )}
+
+              {/* Not paid — show PayPal button */}
+              {!isPaid && !isLoading && !activating && (
                 <>
                   <h4 className="text-lg font-heading font-bold text-gray-900 mb-1">
                     Cryptex Miner — Lifetime License
@@ -159,52 +161,15 @@ export function BuySection() {
                     One-time payment &bull; Instant access
                   </p>
 
-                  {/* PayPal hosted button */}
-                  <PayPalHostedButton hostedButtonId="W7EWEEYZDF9KN" />
+                  {/* PayPal hosted button — onApprove fires automatically */}
+                  <PayPalHostedButton
+                    hostedButtonId="W7EWEEYZDF9KN"
+                    onApprove={handlePaymentApproved}
+                  />
 
-                  {/* Transaction ID verification form */}
-                  <div className="border-t border-surface-200 pt-5 mt-5">
-                    <p className="text-xs text-gray-500 mb-3">
-                      After completing your PayPal payment, enter your transaction ID
-                      from the PayPal confirmation email to unlock access.
-                    </p>
-
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={txnId}
-                        onChange={(e) => { setTxnId(e.target.value); setError(""); }}
-                        placeholder="e.g. 5TY05013RG002845M"
-                        className="w-full px-4 py-3 text-sm border border-surface-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow"
-                        aria-label="PayPal Transaction ID"
-                      />
-
-                      {error && (
-                        <p className="text-sm text-red-600">{error}</p>
-                      )}
-
-                      <button
-                        onClick={handleVerify}
-                        disabled={verifying || !txnId.trim()}
-                        className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label="Verify payment and access Cryptex"
-                      >
-                        {verifying ? (
-                          <>
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Verifying…
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Verify &amp; Access Cryptex
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                  {error && (
+                    <p className="text-sm text-red-600 mt-4">{error}</p>
+                  )}
 
                   <p className="text-xs text-gray-400 text-center mt-4">
                     Secure payment powered by PayPal. 30-day money-back guarantee.

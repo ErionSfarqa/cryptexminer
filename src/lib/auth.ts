@@ -5,12 +5,11 @@
  *  - Node.js route handlers (Node 18+)
  *  - Edge Runtime (Next.js middleware)
  *
- * Cookie value format:  txnId:timestamp:hmacHex
+ * Cookie value format:  token:timestamp:hmacHex
  *
  * This prevents:
  *  - Cookie forgery (need COOKIE_SECRET to produce valid HMAC)
  *  - DevTools "set cookie to true" bypass
- *  - Replay from a different transaction (txnId is bound)
  */
 
 const DEV_SECRET = "cryptex-dev-secret-do-not-use-in-production";
@@ -54,18 +53,20 @@ async function hmac(secret: string, data: string): Promise<string> {
 }
 
 /**
- * Sign a cookie value: returns "txnId:timestamp:hmacHex".
+ * Sign a cookie value: returns "token:timestamp:hmacHex".
+ * If no token is provided, a random hex string is generated.
  */
-export async function signCookie(txnId: string): Promise<string> {
+export async function signCookie(token?: string): Promise<string> {
+  const id = token || crypto.randomUUID().replace(/-/g, "");
   const timestamp = Date.now().toString();
-  const payload = `${txnId}:${timestamp}`;
+  const payload = `${id}:${timestamp}`;
   const sig = await hmac(getSecret(), payload);
   return `${payload}:${sig}`;
 }
 
 /**
  * Verify a signed cookie value.
- * Returns { valid, txnId } if the HMAC matches.
+ * Returns { valid } if the HMAC matches.
  */
 export async function verifyCookie(
   value: string,
@@ -75,10 +76,10 @@ export async function verifyCookie(
   const parts = value.split(":");
   if (parts.length !== 3) return { valid: false };
 
-  const [txnId, timestamp, providedSig] = parts;
-  if (!txnId || !timestamp || !providedSig) return { valid: false };
+  const [token, timestamp, providedSig] = parts;
+  if (!token || !timestamp || !providedSig) return { valid: false };
 
-  const payload = `${txnId}:${timestamp}`;
+  const payload = `${token}:${timestamp}`;
   const expectedSig = await hmac(getSecret(), payload);
 
   // Length check first (avoids leaking length via timing)
@@ -90,16 +91,5 @@ export async function verifyCookie(
     mismatch |= expectedSig.charCodeAt(i) ^ providedSig.charCodeAt(i);
   }
 
-  return mismatch === 0 ? { valid: true, txnId } : { valid: false };
-}
-
-/**
- * Validate that a string looks like a real PayPal transaction ID.
- *
- * PayPal transaction IDs are typically 17 uppercase alphanumeric characters
- * (e.g. "5TY05013RG002845M"), but can vary. We accept 8–30 alphanumeric
- * chars to account for different PayPal transaction/receipt ID formats.
- */
-export function isValidTransactionId(txnId: string): boolean {
-  return /^[A-Za-z0-9]{8,30}$/.test(txnId);
+  return mismatch === 0 ? { valid: true, txnId: token } : { valid: false };
 }

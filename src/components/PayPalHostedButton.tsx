@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useId } from "react";
 
 interface PayPalHostedButtonProps {
   hostedButtonId: string;
+  onApprove?: (data: { orderID?: string; payerID?: string }) => void;
 }
 
 /**
@@ -16,7 +17,7 @@ interface PayPalHostedButtonProps {
  * - Shows loading spinner while waiting
  * - Shows error if SDK fails to load within timeout
  */
-export function PayPalHostedButton({ hostedButtonId }: PayPalHostedButtonProps) {
+export function PayPalHostedButton({ hostedButtonId, onApprove }: PayPalHostedButtonProps) {
   const reactId = useId();
   const containerId = `paypal-hb-${reactId.replace(/:/g, "")}`;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,8 +41,14 @@ export function PayPalHostedButton({ hostedButtonId }: PayPalHostedButtonProps) 
       ) {
         renderedRef.current = true;
         clearInterval(interval);
+        const hostedConfig: Record<string, unknown> = { hostedButtonId };
+        if (onApprove) {
+          hostedConfig.onApprove = (data: { orderID?: string; payerID?: string }) => {
+            onApprove(data);
+          };
+        }
         (window as any).paypal
-          .HostedButtons({ hostedButtonId })
+          .HostedButtons(hostedConfig)
           .render(`#${containerId}`);
         setLoading(false);
       } else if (attempts >= maxAttempts) {

@@ -6,11 +6,7 @@ import { useState, useEffect, useCallback } from "react";
  * Payment gate hook.
  *
  * Checks purchase state via the HMAC-signed httpOnly cookie (server-side).
- * localStorage is NOT used — prevents client-side bypass.
- *
- * confirmPayment(txnId) requires a PayPal transaction ID.
- * The server validates the format and HMAC-signs the cookie.
- * Without a valid transaction ID, access is denied.
+ * confirmPayment() calls the server to set the access cookie after PayPal payment.
  */
 export function usePaywall() {
   const [isPaid, setIsPaid] = useState(false);
@@ -45,23 +41,14 @@ export function usePaywall() {
   }, []);
 
   /**
-   * Confirm payment by providing a PayPal transaction ID.
-   * The server validates the format and HMAC-signs the cookie.
-   *
-   * @param txnId REQUIRED PayPal transaction/receipt ID
+   * Confirm payment. Calls the server to set the access cookie.
    * @returns { ok: boolean, error?: string }
    */
-  const confirmPayment = useCallback(async (txnId: string): Promise<{ ok: boolean; error?: string }> => {
-    if (!txnId || !txnId.trim()) {
-      return { ok: false, error: "Transaction ID is required." };
-    }
-
+  const confirmPayment = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
     try {
       const res = await fetch("/api/access/confirm", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ txnId: txnId.trim() }),
       });
       const data = await res.json();
 
@@ -70,7 +57,7 @@ export function usePaywall() {
         return { ok: true };
       }
 
-      return { ok: false, error: data.error || "Could not verify payment." };
+      return { ok: false, error: data.error || "Could not confirm access." };
     } catch {
       return { ok: false, error: "Server unreachable. Please try again." };
     }
